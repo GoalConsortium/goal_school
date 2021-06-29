@@ -1,5 +1,5 @@
 ## Introduction
-This pipeline implements the tumor only version of the GOAL Consortium Consensus Pipeline in Snakemake. Documentation for the pipeline can be found at the following locations:
+This pipeline implements the tumor only version of the GOAL Consortium Consensus Pipeline in Snakemake. Documentation for the GOAL workflow can be found at the following locations:
 
 * [**Docker Containers**](https://hub.docker.com/orgs/goalconsortium)
 * [**Pipeline Command Scripts (inside containers)**](https://github.com/medforomics/process_scripts)
@@ -34,7 +34,6 @@ The pipeline can be configured to report structural variant and copy number call
         --directory /host/directory/to/work/in \
         --configfile /path/to/configFile \
         --config sample={Sample name} fq1={read one file} fq2={read two file}
-        --config sample=$sample fq1=$fq1_file fq2=$fq2_file
 
 ## Configuring the Pipeline
 ### Environment
