@@ -5,7 +5,7 @@ params.output = './analysis'
 params.snpeff_vers = 'GRCh38.86';
 params.genome="/project/shared/bicf_workflow_ref/human/grch38_cloud/dnaref"
 params.virus_genome="/project/shared/bicf_workflow_ref/human_virus_genome/clinlab_idt_genomes"
-
+params.min=false
 params.markdups='picard'
 params.version = 'v4'
 params.seqrunid = 'runtest'
@@ -203,7 +203,7 @@ process cnv {
   file("${sampleid}.*txt") into cnvtxt
   file("${sampleid}.cnv*pdf") into cnvpdf
   when:
-  skipCNV == false
+  skipCNV == false && params.min == false
   script:
   """
   bash ${repoDir}/process_scripts/variants/cnvkit.sh -r $index_path -b $sbam -p $sampleid -d $capturedir
@@ -220,7 +220,8 @@ process itdseek {
 
   output:
   file("${sampleid}.itdseek_tandemdup.vcf.gz") into itdseekvcf
-
+  when: 
+  params.min == false
   script:
   """
   bash ${repoDir}/process_scripts/variants/svcalling.sh -b $sbam -r $index_path -p $sampleid -l ${index_path}/itd_genes.bed -a itdseek -g $params.snpeff_vers -f
@@ -267,6 +268,8 @@ process msi {
   set caseid,tid,nid,file(ssbam),file(ssidx) from msibam
   output:
   file("${caseid}*") into msiout
+  when: 
+  params.min == false
   script:
   if ( somatic[caseid] == true )
   """
@@ -289,6 +292,8 @@ process pindel {
   file("${caseid}.pindel_tandemdup.vcf.gz") into tdvcf
   set caseid,file("${caseid}.pindel.vcf.gz") into pindelvcf
   file("${caseid}.pindel.genefusion.txt") into pindelgf
+  when: 
+  params.min == false
   script:
   """
   bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l ${index_path}/itd_genes.bed -a pindel -c ${index_path}/goal_core497.bed -g $params.snpeff_vers -f
@@ -308,7 +313,8 @@ process sv {
   set caseid,file("${caseid}.${algo}.vcf.gz") into svvcf
   set caseid,file("${caseid}.${algo}.sv.vcf.gz") optional true into svsv
   file("${caseid}.${algo}.genefusion.txt") into svgf
-
+  when: 
+  params.min == false
   script:				       
   if ( somatic[caseid] == true ) 
   """
