@@ -50,7 +50,7 @@ def reads = []
 if (params.caseid) {
    params.tumorid = 'Tumor'
    somatic[params.caseid] = false		
-   params.tfq = "${params.input}/${params.tumorid}.R{1,2}.fastq.gz"
+   //params.tfq = "${params.input}/${params.tumorid}.R{1,2}.fastq.gz"
    reads << tuple(params.caseid,params.tumorid,file(params.tfq))
    if( params.normalid ) {
       somatic[params.caseid] = true
@@ -99,9 +99,7 @@ new File(params.design).withReader { reader ->
 if( ! reads) { error "Didn't match any input files with entries in the design file" }
 
 process dtrim {
-  queue '32GB,super'
   label 'trim'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
   input:
   set caseid,sampleid, file(fqs) from reads
@@ -114,9 +112,7 @@ process dtrim {
   """
 }
 process dalign {
-  queue '32GB,super'
   label 'dnaalign'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
   input:
   set caseid,tid,nid,sampleid,file(fq1),file(fq2),file(trimout) from treads
@@ -128,13 +124,11 @@ process dalign {
   set caseid,tid,nid,sampleid,file("${sampleid}.bam"),file("${sampleid}.bam.bai") into align
   script:
   """
-  bash ${repoDir}/process_scripts/alignment/dnaseqalign.sh -r $index_path -p $sampleid -x ${fq1} -y ${fq2} $alignopts
+  bash ${repoDir}/process_scripts/alignment/dnaseqalign.sh -r $index_path -p $sampleid -x ${fq1} -y ${fq2} -c ${task.cpus} $alignopts
   """
 }
 process abra2 {
-  queue '32GB,super'
   label 'abra2'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
   input:
   set caseid,tid,nid,sampleid,file(sbam),file(bai) from align
@@ -152,9 +146,7 @@ process abra2 {
   """
 }
 process markdups {
-  errorStrategy 'ignore'
   label 'dnaalign'
-  queue '32GB,super'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
 
   input:
@@ -172,10 +164,8 @@ process markdups {
 }
 
 process dna_bamqc {
-  errorStrategy 'ignore'
   label 'profiling_qc'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
-  queue '128GB,256GB,256GBv1'
   input:
   set caseid,sampleid, file(gbam),file(idx),file(trimreport) from qcbam
   output:
@@ -229,7 +219,6 @@ process itdseek {
 }
 
 process gatkbam {
-  queue '32GB,super'
   label 'variantcalling'
   publishDir "$params.output/$caseid/dnaout", mode: 'copy'
 
@@ -282,9 +271,7 @@ process msi {
 }
 
 process pindel {
-  errorStrategy 'ignore'
   label 'structuralvariant'
-  queue '128GB,256GB,256GBv1'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   input:
   set caseid,tid,nid,file(ssbam),file(ssidx) from pindelbam
@@ -301,9 +288,7 @@ process pindel {
 }
 
 process sv {
-  queue '32GB,super'
   label 'structuralvariant'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
 
   input:
@@ -327,9 +312,7 @@ process sv {
 }
 
 process mutect {
-  queue '128GB,256GB,256GBv1'
   label 'variantcalling'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
 
   input:
@@ -353,9 +336,9 @@ process mutect {
 process somvc {
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   label 'variantcalling'
-  errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+  //errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
   maxErrors 20
-  queue '32GB,super'
+  //queue '32GB,super'
 
   input:
   set caseid,tid,nid,file(ssbam),file(ssidx) from sombam
@@ -373,9 +356,7 @@ process somvc {
 }
 
 process germvc {
-  queue '32GB,super'
   label 'variantcalling'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   input:
   set caseid,tid,nid,file(gbam),file(gidx) from germbam
@@ -391,9 +372,7 @@ process germvc {
 }
 
 process germstrelka {
-  queue '32GB,super'
   label 'variantcalling'
-  errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
 
   input:
