@@ -1,0 +1,3 @@
+wget --timestamping 'ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/snp150Common.txt.gz' -O snp150Common.txt.gz
+python /cm/shared/apps/hisat2/2.1.0-intel/hisat2_extract_snps_haplotypes_UCSC.py genome.fa snp150Common.txt.gz dbSnp_hisat
+hisat2-build -p 8 --snp dbSnp_hisat.snp --haplotype dbSnp_hisat.haplotype genome.fa genome

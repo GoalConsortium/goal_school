@@ -1,0 +1,1 @@
+../preproc_fastq/parse_trimreport.pl

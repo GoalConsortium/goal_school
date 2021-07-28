@@ -1,0 +1,1 @@
+../genect_rnaseq/geneabundance.sh
