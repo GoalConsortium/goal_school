@@ -59,11 +59,6 @@ then
     copts="$copts --paired"
 fi
 
-if [[ -z $isdocker ]]
-then
-    source /etc/profile.d/modules.sh
-    module load trimgalore/0.6.4 cutadapt/2.5
-fi
 trim_galore $copts ${fqs}
 files=`find ./ -name "*_val_1.fq.gz"`
 
@@ -73,7 +68,6 @@ then
     mv *_val_2.fq.gz ${pair_id}.trim.R2.fastq.gz
 else
     mv *_trimmed.fq.gz ${pair_id}.trim.R1.fastq.gz
-    #cp ${pair_id}.trim.R1.fastq.gz ${pair_id}.trim.R2.fastq.gz 
 fi
 
 if [[ $filter == 1 ]]

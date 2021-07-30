@@ -124,7 +124,10 @@ process dalign {
   set caseid,tid,nid,sampleid,file("${sampleid}.bam"),file("${sampleid}.bam.bai") into align
   script:
   """
-  bash ${repoDir}/process_scripts/alignment/dnaseqalign.sh -r $index_path -p $sampleid -x ${fq1} -y ${fq2} -c ${task.cpus} $alignopts
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  
+  bash ${repoDir}/process_scripts/alignment/dnaseqalign.sh -r $index_path -p $sampleid -x ${fq1} -y ${fq2} -c ${task.cpus} -m \${memory} $alignopts
   """
 }
 process abra2 {
@@ -138,7 +141,9 @@ process abra2 {
   set caseid,tid,nid,sampleid, file("${sampleid}.bam"),file("${sampleid}.bam.bai") into mdupbam
   script:
   """
-  bash ${repoDir}/process_scripts/alignment/abra2.sh -r $index_path -p $sampleid -b ${sbam} -c ${capturebed}
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/alignment/abra2.sh -r $index_path -p $sampleid -b ${sbam} -t ${capturebed} -c ${task.cpus} -m \${memory} 
   mv ${sbam} ${sampleid}.ori.bam
   mv ${bai} ${sampleid}.ori.bai
   mv ${sampleid}.abra2.bam  ${sampleid}.bam

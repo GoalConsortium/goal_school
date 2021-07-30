@@ -16,33 +16,42 @@ usage() {
 
 OPTIND=1 # Reset OPTIND
 #while getopts :r:x:y:g:p:a:uh opt
-while getopts :r:x:y:g:p:a:c:uh opt
+while getopts :r:x:y:g:p:a:c:m:uh opt
 do
     case $opt in
         r) index_path=$OPTARG;;
         x) fq1=$OPTARG;;
         y) fq2=$OPTARG;;
-	u) umi='umi';;
-	g) read_group=$OPTARG;;
+	    g) read_group=$OPTARG;;
         p) pair_id=$OPTARG;;
-	a) aligner=$OPTARG;;
-	c) cpus=$OPTARG;;
+	    a) aligner=$OPTARG;;
+	    c) cpus=$OPTARG;;
+	    m) memory=$OPTARG;;
+	    u) umi='umi';;
         h) usage;;
     esac
 done
 
 shift $(($OPTIND -1))
 
+
+echo "#######################"
+echo "memory $memory;"
+echo "cpus $cpus;"
+echo "index_path $index_path;"
+echo "fq1 $fq1;"
+echo "fq2 $fq2;"
+echo "read_group $read_group;"
+echo "pair_id $pair_id;"
+echo "aligner $aligner;"
+    
+echo "#######################"
+
 # Check for mandatory options
 if [[ -z $pair_id ]] || [[ -z $fq1 ]]; then
     usage
 fi
 
-#NPROC=$SLURM_CPUS_ON_NODE
-#if [[ -z $NPROC ]]
-#then
-#    NPROC=`nproc`
-#fi
 
 if [[ -z $read_group ]]
 then
@@ -83,5 +92,5 @@ which samtools
 echo samtools sort -n --threads $cpus -o output.dups.bam output.unsort.bam
 
 samtools sort -n --threads $cpus -o output.dups.bam output.unsort.bam
-java -Djava.io.tmpdir=./ -Xmx4g  -jar $PICARD/picard.jar FixMateInformation ASSUME_SORTED=TRUE SORT_ORDER=coordinate ADD_MATE_CIGAR=TRUE I=output.dups.bam O=${pair_id}.bam
+java -Djava.io.tmpdir=./ -Xmx${memory}g  -jar $PICARD/picard.jar FixMateInformation ASSUME_SORTED=TRUE SORT_ORDER=coordinate ADD_MATE_CIGAR=TRUE I=output.dups.bam O=${pair_id}.bam
 samtools index ${pair_id}.bam
