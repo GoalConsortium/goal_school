@@ -11,21 +11,23 @@ usage() {
   exit 1
 }
 OPTIND=1 # Reset OPTIND
-while getopts :r:p:b:t:x:c:g:y:n:l:a:hf opt
+while getopts :r:p:b:t:x:c:g:y:n:l:a:z:m:hf opt
 do
     case $opt in
         r) index_path=$OPTARG;;
         p) pair_id=$OPTARG;;
-        t) tumor=$OPTARG;;
-        n) normal=$OPTARG;;
-	a) method=$OPTARG;;
-        x) tid=$OPTARG;;
-        y) nid=$OPTARG;;
-	f) filter=1;;
-	g) snpeffgeno=$OPTARG;;
         b) sbam=$OPTARG;;
-	c) tbed=$OPTARG;;
-	l) itdbed=$OPTARG;;
+        t) tumor=$OPTARG;;
+        x) tid=$OPTARG;;
+	    c) tbed=$OPTARG;;
+	    g) snpeffgeno=$OPTARG;;
+        y) nid=$OPTARG;;
+        n) normal=$OPTARG;;
+	    l) itdbed=$OPTARG;;
+	    a) method=$OPTARG;;
+	    z) cpus=$OPTARG;;
+	    m) memory=$OPTARG;;
+	    f) filter=1;;
         h) usage;;
     esac
 done
@@ -38,11 +40,6 @@ baseDir="`dirname \"$0\"`"
 # Check for mandatory options
 if [[ -z $pair_id ]] || [[ -z $index_path ]]; then
     usage
-fi
-NPROC=$SLURM_CPUS_ON_NODE
-if [[ -z $NPROC ]]
-then
-    NPROC=`nproc`
 fi
 
 if [[ -a "${index_path}/genome.fa" ]]
@@ -75,7 +72,7 @@ for i in *.bam; do
     then
 	tid=$sid
     fi
-    samtools index -@ $NPROC $i
+    samtools index -@ $cpus $i
 done
 bamlist=''
 for i in *.bam; do
@@ -84,7 +81,7 @@ done
 
 #RUN DELLY
 
-if  [[ $method == 'delly' ]] || [[ $method == 'svaba' ]] || [[ $method == 'gridss' ]]
+if  [[ $method == 'delly' ]] || [[ $method == 'svaba' ]]  
 then
     if [[ $method == 'delly' ]]
     then
@@ -97,18 +94,16 @@ then
 	bcftools concat -a -O v ${pair_id}.delly_duplications.bcf ${pair_id}.delly_inversions.bcf ${pair_id}.delly_translocations.bcf ${pair_id}.delly_deletion.bcf ${pair_id}.delly_insertion.bcf | vcf-sort -t temp | bgzip > ${pair_id}.${method}.svar.vcf.gz
     elif [[ $method == 'svaba' ]]
     then
-	svaba run -p $NPROC -G ${reffa} -a ${pair_id} $bamlist
+	svaba run -p $cpus -G ${reffa} -a ${pair_id} $bamlist
 	vcf-concat ${pair_id}.svaba.unfiltered*sv.vcf | perl -pe 's/\.consensus|\.bam//g' | vcf-sort| bgzip > ${pair_id}.${method}.var.vcf.gz
 	vcf-concat ${pair_id}.svaba.unfiltered*indel.vcf | perl -pe 's/\.consensus|\.bam//g' | vcf-sort | java -jar $SNPEFF_HOME/SnpSift.jar filter "( SPAN >= 20)" - |bgzip > ${pair_id}.svaba.indel.vcf.gz
 	vcf-concat ${pair_id}.${method}.var.vcf.gz ${pair_id}.svaba.indel.vcf.gz | vcf-sort| bgzip > ${pair_id}.${method}.svar.vcf.gz
 	rm ${pair_id}.contigs.bam
-    elif [[ $method == 'gridss' ]]
-    then
-	singularity exec --no-home --cleanenv /project/shared/bicf_workflow_ref/seqprg/singularity/gridss_v2.11.1.img gridss.sh --reference ${reffa} -o  ${pair_id}.${method}.svar.vcf.gz -t 8 -a gridss.assembly.bam --workingdir temp --steps All ${bams} --jvmheap 31g
-	rm gridss.assembly.bam
     fi
     bash $baseDir/norm_annot.sh -r ${index_path} -p ${pair_id}.${method}.sv -v ${pair_id}.${method}.svar.vcf.gz -s    
-    java -jar $SNPEFF_HOME/SnpSift.jar filter "( GEN[*].DP >= 20 ) & ( FILTER = 'PASS'  | GEN[*].AO > 20)" ${pair_id}.${method}.sv.norm.vcf.gz | java -Xmx10g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} - | bgzip > ${pair_id}.${method}.vcf.gz
+    java -jar $SNPEFF_HOME/SnpSift.jar filter "( GEN[*].DP >= 20 ) & ( FILTER =
+    'PASS'  | GEN[*].AO > 20)" ${pair_id}.${method}.sv.norm.vcf.gz | java
+    -Xmx${memory}g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} - | bgzip > ${pair_id}.${method}.vcf.gz
     
     if [[ $filter == 1 ]]
     then
@@ -124,15 +119,15 @@ then
     then
 	bedopt="-j $tbed"
     fi
-    pindel -T $NPROC -f ${reffa} -i ${pair_id}.pindel.config -o ${pair_id}.pindel_out --report_inversions false $bedopt
+    pindel -T $cpus -f ${reffa} -i ${pair_id}.pindel.config -o ${pair_id}.pindel_out --report_inversions false $bedopt
     pindel2vcf -P ${pair_id}.pindel_out -r ${reffa} -R HG38 -d ${genomefiledate} -v pindel.vcf
     cat pindel.vcf | java -jar $SNPEFF_HOME/SnpSift.jar filter "( GEN[*].AD[1] >= 10 )" | bgzip > pindel.vcf.gz
     tabix pindel.vcf.gz
     bash $baseDir/norm_annot.sh -r ${index_path} -p pindel -v pindel.vcf.gz
     perl $baseDir/parse_pindel.pl ${pair_id} pindel.norm.vcf.gz
-    java -Xmx10g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.indel.vcf |bgzip > ${pair_id}.pindel_indel.vcf.gz
-    java -Xmx10g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.dup.vcf | bedtools intersect -header -b ${itdbed} -a stdin | bgzip > ${pair_id}.pindel_tandemdup.vcf.gz
-    java -Xmx10g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.sv.vcf | bgzip > ${pair_id}.pindel.sv.vcf.gz
+    java -Xmx${memory}g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.indel.vcf |bgzip > ${pair_id}.pindel_indel.vcf.gz
+    java -Xmx${memory}g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.dup.vcf | bedtools intersect -header -b ${itdbed} -a stdin | bgzip > ${pair_id}.pindel_tandemdup.vcf.gz
+    java -Xmx${memory}g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} ${pair_id}.sv.vcf | bgzip > ${pair_id}.pindel.sv.vcf.gz
     if [[ $filter == 1 ]]
     then
 	perl $baseDir/filter_pindel.pl -d ${pair_id}.pindel_tandemdup.vcf.gz -s ${pair_id}.pindel.sv.vcf.gz -i ${pair_id}.pindel_indel.vcf.gz
@@ -151,11 +146,14 @@ elif [[ $method == 'itdseek' ]]
 then
     stexe=`which samtools`
     echo $stexe
-    samtools view -@ $NPROC -L ${itdbed} ${sbam} | itdseek.pl --refseq ${reffa} --samtools ${stexe} --bam ${sbam} | vcf-sort | bedtools intersect -header -b ${itdbed} -a stdin | java -Xmx30g -jar $SNPEFF_HOME/SnpSift.jar filter "( LEN < 10000 )" | bgzip > ${pair_id}.itdseek.vcf.gz
+    samtools view -@ $cpus -L ${itdbed} ${sbam} | itdseek.pl --refseq ${reffa}
+    --samtools ${stexe} --bam ${sbam} | vcf-sort | bedtools intersect -header -b
+    ${itdbed} -a stdin | java -Xmx${memory}g -jar $SNPEFF_HOME/SnpSift.jar filter "( LEN < 10000 )" | bgzip > ${pair_id}.itdseek.vcf.gz
     
     tabix ${pair_id}.itdseek.vcf.gz
     
-    bcftools norm --fasta-ref $reffa -m - -Ov ${pair_id}.itdseek.vcf.gz | java -Xmx30g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} - |bgzip > ${pair_id}.itdseek_tandemdup.vcf.gz
+    bcftools norm --fasta-ref $reffa -m - -Ov ${pair_id}.itdseek.vcf.gz | java
+    -Xmx${memory}g -jar $SNPEFF_HOME/snpEff.jar -no-intergenic -lof -c $SNPEFF_HOME/snpEff.config ${snpeffgeno} - |bgzip > ${pair_id}.itdseek_tandemdup.vcf.gz
     if [[ $filter == 1 ]]
     then
 	perl $baseDir/filter_itdseeker.pl -t ${pair_id} -d ${pair_id}.itdseek_tandemdup.vcf.gz

@@ -161,7 +161,9 @@ process markdups {
   set caseid,tid,nid,file("${sampleid}.consensus.bam"),file("${sampleid}.consensus.bam.bai") into consbam
   script:
   """
-  bash ${repoDir}/process_scripts/alignment/markdups.sh -a $params.markdups -b $sbam -p $sampleid -r $index_path
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/alignment/markdups.sh -a $params.markdups -b $sbam -p $sampleid -r $index_path -c ${task.cpus} -m \${memory}
 
   mv ${sampleid}.dedup.bam ${sampleid}.consensus.bam
   mv ${sampleid}.dedup.bam.bai ${sampleid}.consensus.bam.bai
@@ -178,14 +180,16 @@ process dna_bamqc {
   file("${sampleid}*txt") into dalignstats	
   script:
   """
-  bash ${repoDir}/process_scripts/alignment/bamqc.sh -c $capturebed -n dna -r $index_path -b ${gbam} -p $sampleid -e ${params.version} 
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/alignment/bamqc.sh -c $capturebed -n dna -r $index_path -b ${gbam} -p $sampleid -e ${params.version} -x ${task.cpus} -y \${memory}
   """
 }
 
 process cnv {
-  executor 'local'
+  //executor 'local'
   label 'structuralvariant'
-  errorStrategy 'ignore'
+  //errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   input:
   set caseid,sampleid,file(sbam),file(sidx) from cnvbam
@@ -206,9 +210,9 @@ process cnv {
 }
 
 process itdseek {
-  executor 'local'
+  //executor 'local'
   label 'structuralvariant'
-  errorStrategy 'ignore'
+  //errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   input:
   set caseid,sampleid,file(sbam),file(sidx) from itdbam
@@ -219,7 +223,9 @@ process itdseek {
   params.min == false
   script:
   """
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -b $sbam -r $index_path -p $sampleid -l ${index_path}/itd_genes.bed -a itdseek -g $params.snpeff_vers -f
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -b $sbam -r $index_path -p $sampleid -l ${index_path}/itd_genes.bed -a itdseek -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }
 
@@ -233,7 +239,9 @@ process gatkbam {
   set caseid,tid,nid,file("${sampleid}.final.bam"),file("${sampleid}.final.bam.bai") into gtxbam
   script:
   """
-  bash ${repoDir}/process_scripts/variants/gatkrunner.sh -a gatkbam -b $sbam -r $index_path -p $sampleid
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/gatkrunner.sh -a gatkbam -b $sbam -r $index_path -p $sampleid -x ${task.cpus} -y \${memory}
   """
 }
 
@@ -254,10 +262,10 @@ gtxbam
    .set { mutectbam }
 
 process msi {
-  executor 'local'
+  //executor 'local'
   label 'profiling_qc'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
-  errorStrategy 'ignore'
+  //errorStrategy 'ignore'
   input:
   set caseid,tid,nid,file(ssbam),file(ssidx) from msibam
   output:
@@ -288,7 +296,9 @@ process pindel {
   params.min == false
   script:
   """
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l ${index_path}/itd_genes.bed -a pindel -c ${index_path}/goal_core497.bed -g $params.snpeff_vers -f
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l ${index_path}/itd_genes.bed -a pindel -c ${index_path}/goal_core497.bed -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }
 
@@ -308,11 +318,15 @@ process sv {
   script:				       
   if ( somatic[caseid] == true ) 
   """
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -x ${tid} -y ${nid} -b ${tid}.bam -n ${nid}.bam -p $caseid -a ${algo} -g $params.snpeff_vers -f 
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -x ${tid} -y ${nid} -b ${tid}.bam -n ${nid}.bam -p $caseid -a ${algo} -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f 
   """
   else 
   """
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -b ${tid}.bam -p $caseid -a ${algo} -g $params.snpeff_vers -f
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -b ${tid}.bam -p $caseid -a ${algo} -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }
 
@@ -401,9 +415,9 @@ Channel
   .set { vcflist}
 
 process integrate {
-  executor 'local'
+  //executor 'local'
   label 'variantcalling'
-  errorStrategy 'ignore'
+  //errorStrategy 'ignore'
   publishDir "$params.output/$caseid/dnavcf", mode: 'copy'
   input:
   set caseid,file(vcf) from vcflist

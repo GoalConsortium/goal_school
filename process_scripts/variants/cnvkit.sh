@@ -36,11 +36,7 @@ then
     "missing pair_id or bam"
     usage
 fi
-NPROC=$SLURM_CPUS_ON_NODE
-if [[ -z $NPROC ]]
-then
-    NPROC=`nproc`
-fi
+
 if [[ -z $paneldir ]]
 then
     paneldir="UTSW_V4_pancancer"
@@ -62,11 +58,6 @@ echo "${targets}targets.bed"
 echo "${targets}antitargets.bed"
 echo "${normals}"
 
-if [[ -z $isdocker ]]
-then
-    source /etc/profile.d/modules.sh
-    module load cnvkit/0.9.5 bedtools/2.26.0 samtools/gcc/1.8 bcftools/gcc/1.8 java/oracle/jdk1.8.0_171 snpeff/4.3q
-fi
 
 unset DISPLAY
 cnvkit.py coverage ${sbam} ${targets}targets.bed -o ${pair_id}.targetcoverage.cnn

@@ -13,7 +13,7 @@ usage() {
     exit 1
 }
 OPTIND=1 # Reset OPTIND
-while getopts :r:b:c:n:p:u:e:s:d:h opt
+while getopts :r:b:c:n:p:u:e:s:d:x:y:h opt
 do
     case $opt in
         r) index_path=$OPTARG;;
@@ -21,10 +21,12 @@ do
         c) bed=$OPTARG;;
         n) nuctype=$OPTARG;;
         p) pair_id=$OPTARG;;
-	d) dedup=$OPTARG;;
-	e) version=$OPTARG;;
-	s) skiplc=1;;
-	u) user=$OPTARG;;
+	    u) user=$OPTARG;;
+	    e) version=$OPTARG;;
+	    s) skiplc=1;;
+	    d) dedup=$OPTARG;;
+	    x) cpus=$OPTARG;;
+	    y) memory=$OPTARG;;
         h) usage;;
     esac
 done
@@ -40,12 +42,6 @@ if [[ -z $version ]]
 then
     version='NA'
 fi
-NPROC=$SLURM_CPUS_ON_NODE
-if [[ -z $NPROC ]]
-then
-    NPROC=`nproc`
-fi
-threads=`expr $NPROC`
 
 if [[ -n $user ]]
 then
@@ -63,13 +59,9 @@ if [[ -f $index_path/reference_info.txt ]]
 then
     parseopt="$parseopt -r $index_path"
 fi
-tmpdir=`pwd`
 
-if [[ -z $isdocker ]]
-then
-    source /etc/profile.d/modules.sh
-    module load samtools/gcc/1.10 fastqc/0.11.8 bedtools/2.29.0 picard/2.10.3
-fi
+
+tmpdir=`pwd`
 
 samtools flagstat ${sbam} > ${pair_id}.flagstat.txt
 fastqc -f bam ${sbam}
@@ -78,7 +70,7 @@ baseDir="`dirname \"$0\"`"
 if [[ $dedup == 1 ]]
 then
     mv $sbam ori.bam
-    samtools view -@ $threads -F 1024 -b -o ${sbam} ori.bam
+    samtools view -@ $cpus -F 1024 -b -o ${sbam} ori.bam
 fi
 
 if [[ $nuctype == 'dna' ]]
@@ -89,15 +81,11 @@ then
     perl $baseDir/calculate_depthcov.pl ${pair_id}.covhist.txt
     if [[ -z $skiplc ]]
     then
-	samtools view -@ $threads -b -L ${bed} -o ${pair_id}.ontarget.bam ${sbam}
-	samtools index -@ $threads ${pair_id}.ontarget.bam
+	samtools view -@ $cpus -b -L ${bed} -o ${pair_id}.ontarget.bam ${sbam}
+	samtools index -@ $cpus ${pair_id}.ontarget.bam
 	samtools flagstat  ${pair_id}.ontarget.bam > ${pair_id}.ontarget.flagstat.txt
-	java -Xmx64g -Djava.io.tmpdir=${tmpdir} -XX:ParallelGCThreads=$threads -jar $PICARD/picard.jar EstimateLibraryComplexity BARCODE_TAG=RG I=${sbam} OUTPUT=${pair_id}.libcomplex.txt TMP_DIR=${tmpdir}
-	#samtools view  -@ $threads -b -q 1 ${sbam} | bedtools coverage -hist -b stdin -a ${bed} > ${pair_id}.mapqualcov.txt
-	#java -Xmx64g -Djava.io.tmpdir=${tmpdir} -jar $PICARD/picard.jar CollectAlignmentSummaryMetrics R=${index_path}/genome.fa I=${pair_id}.ontarget.bam OUTPUT=${pair_id}.alignmentsummarymetrics.txt TMP_DIR=${tmpdir}
-	#samtools view  -@ $threads ${sbam} | awk '{sum+=$5} END { print "Mean MAPQ =",sum/NR}' > ${pair_id}.meanmap.txt
+	java -Xmx${memory}g -Djava.io.tmpdir=${tmpdir} -XX:ParallelGCThreads=$cpus -jar $PICARD/picard.jar EstimateLibraryComplexity BARCODE_TAG=RG I=${sbam} OUTPUT=${pair_id}.libcomplex.txt TMP_DIR=${tmpdir}
     fi
-    #java -Xmx64g -Djava.io.tmpdir=${tmpdir} -jar $PICARD/picard.jar CollectInsertSizeMetrics INPUT=${sbam} HISTOGRAM_FILE=${pair_id}.hist.ps REFERENCE_SEQUENCE=${index_path}/genome.fa OUTPUT=${pair_id}.hist.txt TMP_DIR=${tmpdir}
     perl $baseDir/sequenceqc_dna.pl $parseopt ${pair_id}.genomecov.txt
 else
     perl $baseDir/sequenceqc_rna.pl $parseopt ${pair_id}.flagstat.txt
