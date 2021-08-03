@@ -15,8 +15,8 @@ do
     case $opt in
         r) index_path=$OPTARG;;
         p) pair_id=$OPTARG;;
-	v) vcf=$OPTARG;;
-	g) snpeffgeno=$OPTARG;;
+	    v) vcf=$OPTARG;;
+	    g) snpeffgeno=$OPTARG;;
         h) usage;;
     esac
 done
@@ -36,12 +36,6 @@ fi
 if [[ -z $snpeffgeno ]]
 then
     snpeffgeno='GRCh38.86'
-fi
-if [[ -z $isdocker ]]
-then
-    source /etc/profile.d/modules.sh
-    module load bedtools/2.26.0 samtools/1.6 bcftools/1.6 snpeff/4.3q 
-    export PATH=/project/shared/bicf_workflow_ref/seqprg/bin:$PATH
 fi
 
 perl $baseDir\/uniform_vcf_gt.pl $pair_id $vcf

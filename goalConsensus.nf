@@ -9,6 +9,8 @@ params.min=false
 params.markdups='picard'
 params.version = 'v4'
 params.seqrunid = 'runtest'
+params.goal_core_bed="$params.genome/goal_core497.hg38.bed"
+params.itd_gene_bed="$params.genome/itd_genes.bed"
 
 somatic = false
 fpalgo = ['fb']
@@ -225,7 +227,7 @@ process itdseek {
   """
   memory=\$(echo ${task.memory} | cut -d ' ' -f1)
   echo \$memory
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -b $sbam -r $index_path -p $sampleid -l ${index_path}/itd_genes.bed -a itdseek -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -b $sbam -r $index_path -p $sampleid -l $params.itd_gene_bed -a itdseek -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }
 
@@ -241,7 +243,7 @@ process gatkbam {
   """
   memory=\$(echo ${task.memory} | cut -d ' ' -f1)
   echo \$memory
-  bash ${repoDir}/process_scripts/variants/gatkrunner.sh -a gatkbam -b $sbam -r $index_path -p $sampleid -x ${task.cpus} -y \${memory}
+  bash ${repoDir}/process_scripts/variants/gatkrunner.sh -a gatkbam -b $sbam -r $index_path -p $sampleid -c ${task.cpus} -m \${memory}
   """
 }
 
@@ -298,7 +300,9 @@ process pindel {
   """
   memory=\$(echo ${task.memory} | cut -d ' ' -f1)
   echo \$memory
-  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l ${index_path}/itd_genes.bed -a pindel -c ${index_path}/goal_core497.bed -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
+  echo $params.itd_gene_bed
+  echo $goal_core_bed
+  bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l $params.itd_gene_bed -a pindel -c $params.goal_core_bed -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }
 
@@ -342,12 +346,16 @@ process mutect {
   script:
   if ( somatic[caseid] == true ) 
   """
-  bash ${repoDir}/process_scripts/variants/somatic_vc.sh $ponopt -r $index_path -p $caseid -x $tid -y $nid -t ${tid}.final.bam -n ${nid}.final.bam -b $capturebed -a mutect
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/somatic_vc.sh $ponopt -r $index_path -p $caseid -x $tid -y $nid -t ${tid}.final.bam -n ${nid}.final.bam -b $capturebed -a mutect -c ${task.cpus} -m \${memory}
   bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.mutect -v ${caseid}.mutect.vcf.gz
   """
   else
   """
-  bash ${repoDir}/process_scripts/variants/germline_vc.sh $ponopt -r $index_path -p $caseid -b $capturebed -a mutect
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/germline_vc.sh $ponopt -r $index_path -p $caseid -b $capturebed -a mutect -c ${task.cpus} -m \${memory}
   bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.mutect -v ${caseid}.mutect.vcf.gz
   """
 }
@@ -369,8 +377,10 @@ process somvc {
   somatic[caseid] == true
   script:
   """
-  bash ${repoDir}/process_scripts/variants/somatic_vc.sh -r $index_path -p $caseid -x $tid -y $nid -n ${nid}.consensus.bam -t ${tid}.consensus.bam -a ${algo} -b $capturebed
-  bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.${algo} -v ${caseid}.${algo}.vcf.gz
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/somatic_vc.sh -r $index_path -p $caseid -x $tid -y $nid -n ${nid}.consensus.bam -t ${tid}.consensus.bam -a ${algo} -b $capturebed -c ${task.cpus} -m \${memory}
+  bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.${algo} -v ${caseid}.${algo}.vcf.gz 
   """
 }
 
@@ -385,7 +395,9 @@ process germvc {
   set caseid,file("${caseid}.${algo}.ori.vcf.gz") into germori
   script:
   """
-  bash ${repoDir}/process_scripts/variants/germline_vc.sh -r $index_path -p $caseid -a ${algo} -b $capturebed
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/germline_vc.sh -r $index_path -p $caseid -a ${algo} -b $capturebed -c ${task.cpus} -m \${memory}
   bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.${algo} -v ${caseid}.${algo}.vcf.gz 
   """
 }
@@ -403,7 +415,9 @@ process germstrelka {
   somatic[caseid] == false
   script:
   """
-  bash ${repoDir}/process_scripts/variants/germline_vc.sh -r $index_path -p $caseid -a strelka2 -b $capturebed
+  memory=\$(echo ${task.memory} | cut -d ' ' -f1)
+  echo \$memory
+  bash ${repoDir}/process_scripts/variants/germline_vc.sh -r $index_path -p $caseid -a strelka2 -b $capturebed -c ${task.cpus} -m \${memory}
   bash ${repoDir}/process_scripts/variants/uni_norm_annot.sh -g $params.snpeff_vers -r $index_path -p ${caseid}.strelka2 -v ${caseid}.strelka2.vcf.gz 
   """
 }
