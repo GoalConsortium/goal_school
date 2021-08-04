@@ -28,11 +28,6 @@ if [[ -z $dir ]]
 then
     dir='.'
 fi
-if [[ -z $isdocker ]]
-then
-    source /etc/profile.d/modules.sh
-    module load bedtools/2.26.0 samtools/1.6 bcftools/1.6 snpeff/4.3q
-fi
 
 HS=${dir}/*.hotspot.vcf.gz
 list1=`ls ${dir}/*vcf.gz|grep -v hotspot`

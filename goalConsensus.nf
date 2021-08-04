@@ -286,7 +286,8 @@ process msi {
 }
 
 process pindel {
-  label 'structuralvariant'
+  //label 'structuralvariant'
+  label 'pindel'
   publishDir "$params.output/$caseid/dnacallset", mode: 'copy'
   input:
   set caseid,tid,nid,file(ssbam),file(ssidx) from pindelbam
@@ -300,8 +301,6 @@ process pindel {
   """
   memory=\$(echo ${task.memory} | cut -d ' ' -f1)
   echo \$memory
-  echo $params.itd_gene_bed
-  echo $goal_core_bed
   bash ${repoDir}/process_scripts/variants/svcalling.sh -r $index_path -p $caseid -l $params.itd_gene_bed -a pindel -c $params.goal_core_bed -g $params.snpeff_vers -z ${task.cpus} -m \${memory} -f
   """
 }

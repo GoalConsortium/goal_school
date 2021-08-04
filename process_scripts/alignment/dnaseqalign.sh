@@ -35,18 +35,6 @@ done
 shift $(($OPTIND -1))
 
 
-echo "#######################"
-echo "memory $memory;"
-echo "cpus $cpus;"
-echo "index_path $index_path;"
-echo "fq1 $fq1;"
-echo "fq2 $fq2;"
-echo "read_group $read_group;"
-echo "pair_id $pair_id;"
-echo "aligner $aligner;"
-    
-echo "#######################"
-
 # Check for mandatory options
 if [[ -z $pair_id ]] || [[ -z $fq1 ]]; then
     usage
