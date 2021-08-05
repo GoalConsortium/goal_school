@@ -1,29 +1,31 @@
 #!/usr/bin/env nextflow
 
-params.input = './fastq'
-params.output = './analysis'
-params.snpeff_vers = 'GRCh38.86';
-params.genome="/project/shared/bicf_workflow_ref/human/grch38_cloud/dnaref"
-params.virus_genome="/project/shared/bicf_workflow_ref/human_virus_genome/clinlab_idt_genomes"
-params.min=false
-params.markdups='picard'
-params.version = 'v4'
-params.seqrunid = 'runtest'
-params.goal_core_bed="$params.genome/goal_core497.hg38.bed"
-params.itd_gene_bed="$params.genome/itd_genes.bed"
+//params.input = './fastq'
+//params.output = './analysis'
+//params.snpeff_vers = 'GRCh38.86';
+//params.genome="/project/shared/bicf_workflow_ref/human/grch38_cloud/dnaref"
+//params.virus_genome="/project/shared/bicf_workflow_ref/human_virus_genome/clinlab_idt_genomes"
+//params.min=false
+//params.markdups='picard'
+//params.version = 'v4'
+//params.seqrunid = 'runtest'
+//params.goal_core_bed="$params.genome/goal_core497.hg38.bed"
+//params.itd_gene_bed="$params.genome/itd_genes.bed"
+
+//ncmconf = file("$params.genome/ncm.conf")
+//dbsnp="$params.genome/dbSnp.vcf.gz"
+//indel="$params.genome/GoldIndels.vcf.gz"
+
 
 somatic = false
 fpalgo = ['fb']
 ssalgo = ['strelka2']
 svalgo = ['delly', 'svaba']
 
-ncmconf = file("$params.genome/ncm.conf")
-reffa=file("$params.genome/genome.fa")
-dbsnp="$params.genome/dbSnp.vcf.gz"
-indel="$params.genome/GoldIndels.vcf.gz"
 
-dbsnp=file(dbsnp)
-knownindel=file(indel)
+reffa=file("$params.reffa")
+dbsnp=file(params.dbsnp)
+knownindel=file(params.indel)
 index_path=file(params.genome)
 capturebed = file("$params.capture")
 capturedir = file("$params.capturedir")
