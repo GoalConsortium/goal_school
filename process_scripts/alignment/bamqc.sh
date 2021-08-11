@@ -43,14 +43,11 @@ then
     version='NA'
 fi
 
+parseopt=""
 if [[ -n $user ]]
 then
-    USER=$user
-else
-    USER=$(whoami)
+    parseopt=" -u $USER"
 fi
-
-parseopt=" -u $USER"
 if [[ -n $version ]]
 then
     parseopt="$parseopt -e $version"
