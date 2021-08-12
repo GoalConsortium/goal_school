@@ -3,14 +3,11 @@ School is a collection of genomics analysis workflows that are used for detectin
 
 ## Prerequisites
 
-These bioinformatics pipelines use **`nextflow`**, a framework for defining and executing pipelines as a directed acyclic graph (DAG) of interdependent steps. Also required is either **`docker`** or **`singularity`**, executors for tools that are [containerized](https://www.docker.com/resources/what-container) for portability across computing environments.
+These bioinformatics pipelines use **`nextflow`**, a framework for defining and executing a directed acyclic graph (DAG) of interdependent steps. Also required is either **`docker`** or **`singularity`**, executors for tools that are [containerized](https://www.docker.com/resources/what-container) for portability across computing environments.
 
-[Follow these instructions](https://www.nextflow.io/docs/latest/getstarted.html) to install Nextflow [and these instructions](https://docs.docker.com/get-docker) to install Docker. Docker requires administrative rights, which you normally have on a laptop/workstation. But if not, contact your system administrator to get Docker installed. In shared computers like HPC clusters, they might have [valid concerns](https://duo.com/decipher/docker-bug-allows-root-access-to-host-file-system) against installing Docker. If so, ask them to [follow these instructions](https://sylabs.io/singularity/) to install singularity instead.
+[Follow these instructions](https://gist.github.com/ckandoth/982ce140b4dd9d6bf72a780c05a549a3) to install Nextflow and Singularity in a Linux environment. For better portability across computing environments (Linux, macOS, Windows), [follow these instructions](https://docs.docker.com/get-docker) to install Docker instead of Singularity. Docker requires administrative rights, which you normally have on a personal laptop/workstation. In shared computers like HPC clusters, your system administrators might have [valid concerns](https://duo.com/decipher/docker-bug-allows-root-access-to-host-file-system) against installing Docker, and then Singularity makes more sense.
 
-In some computing environments these prerequisites are available as [environment modules](https://modules.readthedocs.io/en/latest/). You can load them using:
-```bash
-module load nextflow/20.01.0 singularity/3.5.3
-```
+Some HPC clusters will have these tools pre-installed as [environment modules](https://modules.readthedocs.io/en/latest/). Use command `module avail` to see what's available, and `module load` to load them into your `$PATH`.
 
 ## Quick Start
 
@@ -26,7 +23,7 @@ curl -LO https://reference-files-bucket.s3.amazonaws.com/Reference_Files.zip
 unzip Reference_Files.zip
 ```
 
-In a folder named `fastq`, download tiny FASTQs created from DNA-seq of a tumor (or use your own FASTQs):
+In a folder named `fastq`, download small FASTQs created from DNA-seq of a tumor (or use your own FASTQs):
 ```bash
 mkdir fastq
 wget -P fastq https://github.com/mskcc/roslin-variant/raw/2.4.x/setup/examples/data/fastq/DU874145-T/DU874145-T_IGO_00000_TEST_L001_R{1,2}_001.fastq.gz
@@ -38,10 +35,12 @@ echo -e "SampleID\tCaseID\tTumorID\tNormalID\tFqR1\tFqR2" > fastq/design.txt
 echo -e "DU874145-T\tDU874145\tDU874145-T\t\tDU874145-T_IGO_00000_TEST_L001_R1_001.fastq.gz\tDU874145-T_IGO_00000_TEST_L001_R2_001.fastq.gz" >> fastq/design.txt
 ```
 
-Run the `goalConsensus.nf` pipeline using the `ucla_local` profile that uses Nextflow with docker on the local machine:
+Run the `goalConsensus.nf` pipeline using the `standard` profile that uses Nextflow with singularity on the local machine:
 ```bash
-nextflow run -work-dir .nextflow_work -profile ucla_local goalConsensus.nf --min --repoDir ${PWD} --input fastq --output analysis --seqrunid H7YRLADXX --genome Reference_Files --reffa Reference_Files/genome.fa --dbsnp Reference_Files/dbSnp.vcf.gz --indel Reference_Files/GoldIndels.vcf.gz --pon Reference_Files/UTSW_V4_Heme/mutect2.pon.vcf.gz --capture Reference_Files/UTSW_V4_Heme/targetpanel.bed --capturedir Reference_Files/UTSW_V4_Heme --markdups picard
+nextflow run -work-dir .nextflow_work -profile standard goalConsensus.nf --input fastq --output analysis --repoDir ${PWD} --seqrunid H7YRLADXX --genome Reference_Files
 ```
+
+To run this workflow on a different computing environment, lookup the institute-specific profiles in `nextflow.config` and/or create your own.
 
 # Run Nextflow Workflows
 
