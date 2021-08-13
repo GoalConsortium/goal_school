@@ -3,11 +3,11 @@ School is a collection of genomics analysis workflows that are used for detectin
 
 ## Prerequisites
 
-These bioinformatics pipelines use **`nextflow`**, a framework for defining and executing a directed acyclic graph (DAG) of interdependent steps. Also required is either **`docker`** or **`singularity`**, executors for tools that are [containerized](https://www.docker.com/resources/what-container) for portability across computing environments.
+These bioinformatics pipelines use **`nextflow`**, a framework for defining and executing a directed acyclic graph (DAG) of interdependent steps. Also required is either **`singularity`** or **`docker`**, executors for tools that are [containerized](https://www.docker.com/resources/what-container) for portability across computing environments.
 
-[Follow these instructions](https://gist.github.com/ckandoth/982ce140b4dd9d6bf72a780c05a549a3) to install Nextflow and Singularity in a Linux environment. For better portability across computing environments (Linux, macOS, Windows), [follow these instructions](https://docs.docker.com/get-docker) to install Docker instead of Singularity. Docker requires administrative rights, which you normally have on a personal laptop/workstation. In shared computers like HPC clusters, your system administrators might have [valid concerns](https://duo.com/decipher/docker-bug-allows-root-access-to-host-file-system) against installing Docker, and then Singularity makes more sense.
+[Follow these instructions](https://gist.github.com/ckandoth/982ce140b4dd9d6bf72a780c05a549a3) to install Nextflow and Singularity in a Linux environment. For better portability across computing environments (Linux, macOS, Windows), [follow these instructions](https://docs.docker.com/get-docker) to install Docker. Docker requires administrative rights, which you normally have on a personal laptop/workstation. But in shared computers like HPC clusters, there are [valid concerns](https://duo.com/decipher/docker-bug-allows-root-access-to-host-file-system) against installing Docker, and then Singularity makes more sense.
 
-Some HPC clusters will have these tools pre-installed as [environment modules](https://modules.readthedocs.io/en/latest/). Use command `module avail` to see what's available, and `module load` to load them into your `$PATH`.
+Some HPC clusters will have these tools pre-installed as [environment modules](https://modules.readthedocs.io/en/latest/). Use command `module avail` to see what's available, and `module load` to load them into your `$PATH`. But make sure you have Nextflow 20.07.1 or newer and Singularity 3.5.2 or newer.
 
 ## Quick Start
 
