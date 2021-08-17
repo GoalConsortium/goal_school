@@ -22,14 +22,12 @@ fpalgo = ['fb']
 ssalgo = ['strelka2']
 svalgo = ['delly', 'svaba']
 
-
 reffa=file("$params.reffa")
 dbsnp=file(params.dbsnp)
 knownindel=file(params.indel)
 index_path=file(params.genome)
 capturebed = file("$params.capture")
 capturedir = file("$params.capturedir")
-virus_index_path=file(params.virus_genome)
 
 skipCNV = false
 if(capturedir.isEmpty()) {
@@ -121,7 +119,6 @@ process dalign {
   input:
   set caseid,tid,nid,sampleid,file(fq1),file(fq2),file(trimout) from treads
   output:
-  set caseid,sampleid,file("${sampleid}.bam") into virusalign
   set caseid,sampleid,file("${sampleid}.bam"),file("${sampleid}.bam.bai") into cnvbam
   set caseid,sampleid, file("${sampleid}.bam"),file("${sampleid}.bam.bai"),file(trimout) into qcbam
   set caseid,tid,nid,file("${sampleid}.bam"), file("${sampleid}.bam.bai") into oribam

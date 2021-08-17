@@ -3,11 +3,10 @@
 
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev);
 my %opt = ();
-my $results = GetOptions (\%opt,'refdir|r=s','help|h','gitdir|e=s','user|u=s');
+my $results = GetOptions (\%opt,'refdir|r=s','help|h','gitdir|e=s');
 
 my @statfiles = @ARGV;
 
-my $fileowner = $opt{user};
 my $gittag = 'v5';
 if ($opt{gitdir}) {
     $gittag = $opt{gitdir};
@@ -103,7 +102,7 @@ foreach $sfile (@statfiles) {
   $year += 1900;
   $month++;
   $date = join("-",$year,sprintf("%02s",$month),sprintf("%02s",$day));
-  $fileowner = 's'.$stats[4] unless $fileowner;
+  $fileowner = 's'.$stats[4];
   $hash{status} = $status;
   $hash{date}=$date;
   $hash{fileowner} = $fileowner;

@@ -1,40 +1,46 @@
-# Software for Clinical Health Omics Onocolgy Laboratories
-School is a collection of genomics analysis workflows that are used for detecting single nucleotide variants (SNVs), insertions/deletions (indels), copy number variants (CNVs) and translocations from RNA and DNA sequencing.  These workflows have been validated in a CLIA laboratory at UTSW
+# Software for Clinical Health Omics Oncology Laboratories
+School is a collection of genomics analysis workflows that are used for detecting single nucleotide variants (SNVs), insertions/deletions (indels), copy number variants (CNVs) and translocations from RNA and DNA sequencing. These workflows were first developed and validated in a CLIA laboratory at UTSW, and will continue to be developed and maintained by the Genomics Organization for Academic Laboratories (GOAL) Consortium.
 
-# Initiate Nextflow Workflows
+## Prerequisites
 
-### Required Tools
+These bioinformatics pipelines use **`nextflow`**, a framework for defining and executing a directed acyclic graph (DAG) of interdependent steps. Also required is either **`singularity`** or **`docker`**, executors for tools that are [containerized](https://www.docker.com/resources/what-container) for portability across computing environments.
 
-This pipeline uses [Nextflow](https://www.nextflow.io/docs/latest/index.html), a bioinformatics workflow tool and [Singularity](https://sylabs.io/docs/), a containerization tool.
+[Follow these instructions](https://gist.github.com/ckandoth/982ce140b4dd9d6bf72a780c05a549a3) to install Nextflow and Singularity in a Linux environment. For better portability across computing environments (Linux, macOS, Windows), [follow these instructions](https://docs.docker.com/get-docker) to install Docker. Docker requires administrative rights, which you normally have on a personal laptop/workstation. But in shared computers like HPC clusters, there are [valid concerns](https://duo.com/decipher/docker-bug-allows-root-access-to-host-file-system) against installing Docker, and then Singularity makes more sense.
 
-Make sure both tools rae installed before running this pipeline. If running on a HPC cluster then load required modules.
+Some HPC clusters will have these tools pre-installed as [environment modules](https://modules.readthedocs.io/en/latest/). Use command `module avail` to see what's available, and `module load` to load them into your `$PATH`. But make sure you have Nextflow 20.07.1 or newer and Singularity 3.5.2 or newer.
 
-```
-module load nextflow/20.01.0 singularity/3.5.3
-```
+## Quick Start
 
-### Clone repo
-
-For most recent published version
-
-```
-git clone -b version_1.0.3 --single-branch https://github.com/bcantarel/school.git
+Clone a branch of this repo that you want to test and `cd` into it:
+```bash
+git clone -b UFHPL_branch_1 --single-branch https://github.com/goalconsortium/goal_school.git
+cd goal_school
 ```
 
-For most recent development version
-
+Download and unzip resource files needed by the pipeline (39GB download that unzips to 43GB):
+```bash
+curl -LO https://reference-files-bucket.s3.amazonaws.com/Reference_Files.zip
+unzip Reference_Files.zip
 ```
-git clone https://github.com/bcantarel/school.git
+
+In a folder named `fastq`, download small FASTQs created from DNA-seq of a tumor (or use your own FASTQs):
+```bash
+mkdir fastq
+wget -P fastq https://github.com/mskcc/roslin-variant/raw/2.4.x/setup/examples/data/fastq/DU874145-T/DU874145-T_IGO_00000_TEST_L001_R{1,2}_001.fastq.gz
 ```
 
-### Create Input Directory
-
-The SCHOOL workflow can run many different configurations. The input files must be placed into a fastqs directory along with a design file.
-
+Prepare a design file for the DNA-seq variant calling pipeline:
+```bash
+echo -e "SampleID\tCaseID\tTumorID\tNormalID\tFqR1\tFqR2" > fastq/design.txt
+echo -e "DU874145-T\tDU874145\tDU874145-T\t\tDU874145-T_IGO_00000_TEST_L001_R1_001.fastq.gz\tDU874145-T_IGO_00000_TEST_L001_R2_001.fastq.gz" >> fastq/design.txt
 ```
-cd school/
-mkdir -p ./fastq
+
+Run the `goalConsensus.nf` pipeline using the `standard` profile that uses Nextflow with singularity on the local machine:
+```bash
+nextflow run -work-dir .nextflow_work -profile standard goalConsensus.nf --input fastq --output analysis --repoDir ${PWD} --seqrunid H7YRLADXX --genome Reference_Files
 ```
+
+To run this workflow on a different computing environment, lookup the institute-specific profiles in `nextflow.config` and/or create your own.
 
 # Run Nextflow Workflows
 
@@ -63,7 +69,7 @@ The design file must named design.txt and be in tab seperated format for the wor
   * default is set to *'${basedir}/analysis'*
   * eg: **--output '${basedir}/output'**
 * **--seqrunid**
-  * Illumina Run ID, used to distrinquished repetative runs
+  * Illumina Run ID, used to distinguish repetitive runs
   * default set  to *'runtest'*
   * eg: **--seqrunid 'run'**
 * **--genome**
