@@ -1,26 +1,8 @@
 #!/usr/bin/env nextflow
 
-//params.input = './fastq'
-//params.output = './analysis'
-//params.snpeff_vers = 'GRCh38.86';
-//params.genome="/project/shared/bicf_workflow_ref/human/grch38_cloud/dnaref"
-//params.virus_genome="/project/shared/bicf_workflow_ref/human_virus_genome/clinlab_idt_genomes"
-//params.min=false
-//params.markdups='picard'
-//params.version = 'v4'
-//params.seqrunid = 'runtest'
-//params.goal_core_bed="$params.genome/goal_core497.hg38.bed"
-//params.itd_gene_bed="$params.genome/itd_genes.bed"
-
-//ncmconf = file("$params.genome/ncm.conf")
-//dbsnp="$params.genome/dbSnp.vcf.gz"
-//indel="$params.genome/GoldIndels.vcf.gz"
-
-
-somatic = false
-fpalgo = ['fb']
-ssalgo = ['strelka2']
-svalgo = ['delly', 'svaba']
+fpalgo = params.fpalgo.split(",")
+ssalgo = params.ssalgo.split(",")
+svalgo = params.svalgo.split(",")
 
 reffa=file("$params.reffa")
 dbsnp=file(params.dbsnp)
@@ -49,32 +31,17 @@ def somatic = [:]
 def ids = []
 def reads = []
 
-if (params.caseid) {
-   params.tumorid = 'Tumor'
-   somatic[params.caseid] = false		
-   //params.tfq = "${params.input}/${params.tumorid}.R{1,2}.fastq.gz"
-   reads << tuple(params.caseid,params.tumorid,file(params.tfq))
-   if( params.normalid ) {
-      somatic[params.caseid] = true
-      params.nfq = "${params.input}/${params.normalid}.R{1,2}.fastq.gz"
-      ids << tuple(params.caseid,params.tumorid,params.normalid)
-      ids << tuple(params.caseid,params.tumorid,params.normalid)
-      reads << tuple(params.caseid,params.normalid,file(params.nfq))
-   } else {
-      ids << tuple(params.caseid,params.tumorid,'')
-   }
-
-} else {
-  params.design="$params.input/design.txt"
-  params.fastqs="$params.input/*.fastq.gz"
-  fastqs=file(params.fastqs)
-  design_file=file(params.design)
-  def fileMap = [:]
-  fastqs.each {
-   final fileName = it.getFileName().toString()
-   prefix = fileName.lastIndexOf('/')
-   fileMap[fileName] = it
+params.design="$params.input/design.txt"
+params.fastqs="$params.input/*.fastq.gz"
+fastqs=file(params.fastqs)
+design_file=file(params.design)
+def fileMap = [:]
+fastqs.each {
+  final fileName = it.getFileName().toString()
+  prefix = fileName.lastIndexOf('/')
+  fileMap[fileName] = it
 }
+
 new File(params.design).withReader { reader ->
    def hline = reader.readLine()
    def header = hline.split("\t")
@@ -95,7 +62,6 @@ new File(params.design).withReader { reader ->
      	   ids << tuple(row[cidx],row[tidx],row[nidx])
       }	
    }
-}
 }
 
 if( ! reads) { error "Didn't match any input files with entries in the design file" }

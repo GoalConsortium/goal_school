@@ -15,8 +15,8 @@ do
     case $opt in
         r) index_path=$OPTARG;;
         p) pair_id=$OPTARG;;
-	v) unionvcf=$OPTARG;;
-	g) snpeffgeno=$OPTARG;;
+        v) unionvcf=$OPTARG;;
+        g) snpeffgeno=$OPTARG;;
         h) usage;;
     esac
 done
